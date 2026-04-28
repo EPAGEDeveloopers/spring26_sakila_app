@@ -1,21 +1,15 @@
-# Use an official Python runtime as a base image
-FROM python:3.9-slim
-
-# Set the working directory inside the container
+FROM python:3.9
 WORKDIR /app
-
-# Copy the requirements file into the container at /app
-COPY requirements.txt .
-
-# Install the required Python packages
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of your application into the container
-COPY . .
-
-# Expose the port Flask will run on
+COPY . /app
+RUN pip install flask
+RUN pip install pymysql
+RUN pip install cryptography
+ENV MYSQL_HOST=localhost
+ENV MYSQL_USER=root
+ENV MYSQL_PASSWORD=supersecretpassword
+ENV MYSQL_DB=sakila
 EXPOSE 5000
-
-
-# Run the Flask application
+EXPOSE 3306
+EXPOSE 22
 CMD ["python", "app.py"]
+
