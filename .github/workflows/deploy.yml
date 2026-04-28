@@ -1,0 +1,77 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.py'
+      - 'config.py'
+      - 'templates/**'
+      - 'static/**'
+      - 'Dockerfile'
+      - 'requirements.txt'
+      - 'docker-compose.yml'
+
+jobs:
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build staging image
+        run: docker build -t sakila-app:staging .
+
+      - name: Simulate staging deployment
+        run: |
+          echo "=========================================="
+          echo "  Deploying to STAGING environment"
+          echo "  Image: sakila-app:staging"
+          echo "  Commit: ${{ github.sha }}"
+          echo "  Time: $(date)"
+          echo "=========================================="
+
+      - name: Write deployment summary
+        run: |
+          echo "## 🚀 Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | sakila-app:staging |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed At | $(date) |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Send notification
+        run: echo "Slack notification: Deployment to staging successful ✅"
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Simulate production deployment
+        run: |
+          echo "=========================================="
+          echo "  Deploying to PRODUCTION environment"
+          echo "  Version: v$(date +'%Y.%m.%d')"
+          echo "  Commit: ${{ github.sha }}"
+          echo "=========================================="
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v$(date +'%Y.%m.%d')-${{ github.run_number }}"
+          name: "Release v$(date +'%Y.%m.%d')"
+          body: |
+            ## Automated Production Release
+            - Commit: ${{ github.sha }}
+            - Deployed: $(date)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Send notification
+        run: echo "Slack notification: Deployment to production successful 🚀"
